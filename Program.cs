@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using ConfectioneryApi.Filters; 
 using ConfectioneryApi.Configuration;
+using ConfectioneryApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,9 @@ builder.Services.AddDbContext<ConfectioneryDbContext>(options =>
 
 // Реєстрація репозиторіїв для ін'єкції залежностей
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+// Реєстрація сервісу бізнес-логіки
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 // 2. Змінюємо реєстрацію контролерів, щоб додати наш фільтр
 builder.Services.AddControllers(options =>
