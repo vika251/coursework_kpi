@@ -20,6 +20,7 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 // Реєстрація сервісу бізнес-логіки
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IPastryService, PastryService>();
 
 // 2. Змінюємо реєстрацію контролерів, щоб додати наш фільтр
 builder.Services.AddControllers(options =>
