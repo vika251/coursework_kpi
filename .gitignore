@@ -1,0 +1,15 @@
+# Папки збірки (Build results) - це сміття, яке генерується при компіляції
+[Bb]in/
+[Oo]bj/
+
+# Налаштування користувача (User-specific files)
+*.user
+*.userosscache
+*.suo
+
+# Тимчасові файли Visual Studio Code
+.vscode/
+
+# Інші системні файли
+.DS_Store
+Thumbs.db
