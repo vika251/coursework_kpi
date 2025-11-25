@@ -2,6 +2,8 @@ using FluentValidation;
 using ConfectioneryApi.Data;
 using ConfectioneryApi.Models; // Потрібно для OrderStatus
 using Microsoft.EntityFrameworkCore;
+using System.Threading;    
+using System.Threading.Tasks;
 
 namespace ConfectioneryApi.Validators
 {
