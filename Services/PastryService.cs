@@ -32,29 +32,29 @@ namespace ConfectioneryApi.Services
         public async Task<ServiceResult<IEnumerable<PastryDto>>> GetAllPastriesAsync()
         {
             // 1. ЛОГІКА КЕШУВАННЯ: Читання
-            // Перевіряємо, чи є дані в кеші. Якщо є - повертаємо їх одразу.
-            if (_cache.TryGetValue(PastriesCacheKey, out IEnumerable<PastryDto> pastryDtos))
+            // Додаємо знак питання '?', щоб сказати компілятору: "Так, ми знаємо, що тут може бути null"
+            // І додаємо перевірку "&& pastryDtos != null"
+            if (_cache.TryGetValue(PastriesCacheKey, out IEnumerable<PastryDto>? pastryDtos) && pastryDtos != null)
             {
                 return ServiceResult<IEnumerable<PastryDto>>.Success(pastryDtos);
             }
 
-            // 2. РОБОТА З БД: Якщо в кеші пусто, йдемо в базу.
+            // 2. РОБОТА З БД
             var pastries = await _repository.GetAllAsync();
             
-            // Мапимо (перетворюємо) сутності БД в DTO
-            pastryDtos = pastries.Select(p => new PastryDto 
+            // Додаємо .ToList(), щоб зафіксувати дані у списку
+            var dtos = pastries.Select(p => new PastryDto 
             { 
                 Id = p.Id, 
                 Name = p.Name, 
                 Price = p.Price 
-            });
+            }).ToList();
 
             // 3. ЛОГІКА КЕШУВАННЯ: Запис
-            // Зберігаємо отримані дані в кеш на 5 хвилин.
             var cacheOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
-            _cache.Set(PastriesCacheKey, pastryDtos, cacheOptions);
+            _cache.Set(PastriesCacheKey, dtos, cacheOptions);
 
-            return ServiceResult<IEnumerable<PastryDto>>.Success(pastryDtos);
+            return ServiceResult<IEnumerable<PastryDto>>.Success(dtos);
         }
 
         public async Task<ServiceResult<PastryDto>> GetPastryByIdAsync(int id)
