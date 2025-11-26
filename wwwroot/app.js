@@ -1,5 +1,24 @@
 const API_BASE = '/api';
 
+// Функція для форматування JSON-відповіді FluentValidation у читабельний рядок
+function formatValidationErrors(errorJson) {
+    let message = "Помилки валідації:\n";
+    let hasErrors = false;
+    
+    // FluentValidation повертає словник {Поле: [Список помилок]}
+    for (const field in errorJson) {
+        if (Array.isArray(errorJson[field])) {
+            errorJson[field].forEach(error => {
+                message += `- ${error}\n`;
+                hasErrors = true;
+            });
+        }
+    }
+    
+    // Якщо вдалося знайти помилки, повертаємо відформатований текст. 
+    return hasErrors ? message : JSON.stringify(errorJson, null, 2);
+}
+
 // --- НАВІГАЦІЯ ---
 function showSection(sectionId) {
     document.querySelectorAll('main section').forEach(el => el.style.display = 'none');
@@ -128,25 +147,6 @@ function renderPastries(data) {
     });
 }
 
-async function savePastry() {
-    const id = document.getElementById('pastry-id').value;
-    const name = document.getElementById('pastry-name').value;
-    const price = document.getElementById('pastry-price').value;
-
-    const method = id ? 'PUT' : 'POST';
-    const url = id ? `${API_BASE}/pastries/${id}` : `${API_BASE}/pastries`;
-    const body = { name, price: parseFloat(price) };
-
-    await fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    });
-
-    clearPastryForm();
-    loadPastries();
-}
-
 function editPastry(id, name, price) {
     document.getElementById('pastry-id').value = id;
     document.getElementById('pastry-name').value = name;
@@ -157,6 +157,58 @@ function clearPastryForm() {
     document.getElementById('pastry-id').value = '';
     document.getElementById('pastry-name').value = '';
     document.getElementById('pastry-price').value = '';
+}
+
+async function savePastry() {
+    const id = document.getElementById('pastry-id').value;
+    const name = document.getElementById('pastry-name').value;
+    const price = document.getElementById('pastry-price').value;
+
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `${API_BASE}/pastries/${id}` : `${API_BASE}/pastries`;
+    const body = { name, price: parseFloat(price) };
+
+    try {
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        // --- УСПІХ ---
+        if (res.ok) {
+            alert(id ? "Виріб оновлено!" : "Виріб створено!");
+            clearPastryForm();
+            loadPastries();
+            return;
+        }
+
+        // --- БЛОК ОБРОБКИ ПОМИЛОК ---
+        
+        // 1. Отримуємо вміст відповіді як текст ОДИН РАЗ
+        const errText = await res.text(); 
+        let displayMessage;
+        
+        try {
+            // 2. Спробуємо розпарсити текст як JSON (для FluentValidation)
+            const errorJson = JSON.parse(errText);
+            
+            // 3. Якщо JSON успішний, форматуємо повідомлення
+            displayMessage = formatValidationErrors(errorJson);
+            
+        } catch (e) {
+            // 4. Якщо це не JSON (наприклад, проста помилка 409 Conflict або 404 Not Found)
+            // Виводимо сирий текст або статус
+            displayMessage = `Помилка ${res.status}: ${errText || res.statusText}`;
+        }
+        
+        alert(displayMessage); 
+        return; 
+
+    } catch (e) {
+        // Обробка мережевих помилок (якщо fetch не вдається підключитися)
+        alert("Помилка з'єднання: " + e.message);
+    }
 }
 
 // --- КЛІЄНТИ (CUSTOMERS) ---
@@ -201,6 +253,14 @@ async function saveCustomer() {
         });
         if (!res.ok) {
             const err = await res.text();
+            
+            // Тут також можна використати formatValidationErrors для красивого виведення:
+            // try {
+            //     const errorJson = JSON.parse(err);
+            //     alert(formatValidationErrors(errorJson));
+            // } catch (e) {
+            //     alert("Помилка: " + err);
+            // }
             alert("Помилка: " + err);
             return;
         }
